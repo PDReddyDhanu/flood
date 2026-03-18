@@ -1,0 +1,288 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a citizen using the FloodGuard Connect app to request and track rescue services.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the citizen."
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "The citizen's primary contact phone number, used for login and OTP verification."
+        },
+        "email": {
+          "type": "string",
+          "description": "The citizen's primary contact email address, used for login and OTP verification.",
+          "format": "email"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the user account was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "phoneNumber",
+        "email",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RescueTeam": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RescueTeam",
+      "type": "object",
+      "description": "Represents an organized group of rescue personnel responding to emergencies.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RescueTeam entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The official name of the rescue team (e.g., 'Red Cross Team Alpha')."
+        },
+        "region": {
+          "type": "string",
+          "description": "The geographic region where the team primarily operates."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current operational status of the team (e.g., 'Available', 'Deployed', 'Standby')."
+        },
+        "verificationStatus": {
+          "type": "string",
+          "description": "The administrative verification status of the team (e.g., 'Pending', 'Verified', 'Rejected')."
+        },
+        "currentLocationLatitude": {
+          "type": "number",
+          "description": "The current latitude coordinate of the rescue team's primary position."
+        },
+        "currentLocationLongitude": {
+          "type": "number",
+          "description": "The current longitude coordinate of the rescue team's primary position."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the rescue team record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the rescue team record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "region",
+        "status",
+        "verificationStatus",
+        "currentLocationLatitude",
+        "currentLocationLongitude",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RescueTeamMember": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "RescueTeamMember",
+      "type": "object",
+      "description": "Represents an individual member belonging to a rescue team.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the RescueTeamMember entity."
+        },
+        "rescueTeamId": {
+          "type": "string",
+          "description": "Reference to the RescueTeam this member belongs to."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the rescue team member."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address for the team member, used for login.",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Phone number for the team member."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role or specialization of the member within the team."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current personal status of the team member."
+        },
+        "currentLocationLatitude": {
+          "type": "number",
+          "description": "The latitude coordinate of the rescue team member's position."
+        },
+        "currentLocationLongitude": {
+          "type": "number",
+          "description": "The longitude coordinate of the rescue team member's position."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the team member record was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the team member record was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "rescueTeamId",
+        "name",
+        "email",
+        "phoneNumber",
+        "role",
+        "status",
+        "currentLocationLatitude",
+        "currentLocationLongitude",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "EmergencyTicket": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "EmergencyTicket",
+      "type": "object",
+      "description": "Represents a distress call or emergency request raised by a citizen.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the EmergencyTicket entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to the User who raised this emergency ticket."
+        },
+        "assignedRescueTeamId": {
+          "type": "string",
+          "description": "Optional reference to the RescueTeam assigned to this ticket."
+        },
+        "reportedLocationLatitude": {
+          "type": "number",
+          "description": "The latitude coordinate of the emergency's reported location."
+        },
+        "reportedLocationLongitude": {
+          "type": "number",
+          "description": "The longitude coordinate of the emergency's reported location."
+        },
+        "reportedLocationAddress": {
+          "type": "string",
+          "description": "Human-readable address or landmark of the reported emergency."
+        },
+        "pincode": {
+          "type": "string",
+          "description": "The pincode of the reported emergency location."
+        },
+        "manualLocationInput": {
+          "type": "boolean",
+          "description": "Indicates if the location was manually entered."
+        },
+        "numberOfPeople": {
+          "type": "number",
+          "description": "The number of people affected at the emergency location."
+        },
+        "emergencyTypes": {
+          "type": "array",
+          "description": "An array of specific types of emergency needs.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "additionalNotes": {
+          "type": "string",
+          "description": "Any additional details or context provided by the user."
+        },
+        "priority": {
+          "type": "string",
+          "description": "The system-assigned priority level for the ticket."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the emergency ticket."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp when the emergency ticket was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp when the emergency ticket was last updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "reportedLocationLatitude",
+        "reportedLocationLongitude",
+        "manualLocationInput",
+        "numberOfPeople",
+        "emergencyTypes",
+        "priority",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "anonymous",
+      "password"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores individual citizen user profiles."
+        }
+      },
+      {
+        "path": "/emergency_tickets/{emergencyTicketId}",
+        "definition": {
+          "entityName": "EmergencyTicket",
+          "schema": {
+            "$ref": "#/backend/entities/EmergencyTicket"
+          },
+          "description": "Stores all emergency tickets with static coordinate data."
+        }
+      }
+    ]
+  }
+}

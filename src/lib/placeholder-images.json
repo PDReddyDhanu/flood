@@ -1,0 +1,22 @@
+{
+  "placeholderImages": [
+    {
+      "id": "flood-hero",
+      "description": "Aerial view of a flooded urban area",
+      "imageUrl": "https://picsum.photos/seed/flood1/1200/800",
+      "imageHint": "flooded city"
+    },
+    {
+      "id": "rescue-team",
+      "description": "Rescue workers on a boat in flood waters",
+      "imageUrl": "https://picsum.photos/seed/rescue1/800/600",
+      "imageHint": "flood rescue"
+    },
+    {
+      "id": "emergency-supplies",
+      "description": "Emergency food and water kits",
+      "imageUrl": "https://picsum.photos/seed/supplies/600/400",
+      "imageHint": "emergency supplies"
+    }
+  ]
+}

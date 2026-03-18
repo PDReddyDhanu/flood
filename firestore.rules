@@ -1,0 +1,49 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * FloodGuard Connect Security Rules
+     * Updated: Allowing authenticated users to read and update tickets for coordination.
+     * Redeploy trigger: Broadening read permissions for anonymous users.
+     */
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+    }
+
+    // --- COLLECTION RULES ---
+
+    match /users/{userId} {
+      allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /emergency_tickets/{emergencyTicketId} {
+      // Allow all authenticated users (including anonymous citizens/rescue) to view tickets for coordination.
+      allow read, list: if isSignedIn();
+      
+      // Citizens can create their own tickets.
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      // Admins, owners, or rescue members assigning themselves can update.
+      allow update: if isAdmin() 
+                    || (isSignedIn() && resource.data.userId == request.auth.uid)
+                    || (isSignedIn() && request.resource.data.assignedTeamMemberIds[request.auth.uid] == true);
+                    
+      allow delete: if isAdmin();
+    }
+
+    // Roles and helper paths
+    match /roles_admin/{adminUid} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}
