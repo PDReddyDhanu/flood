@@ -1,14 +1,15 @@
-
 'use client';
 
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Waves, Bell, Menu, LogOut, Settings, Home, Ambulance, Shield, User as UserIcon } from 'lucide-react';
+import { Waves, Menu, LogOut, Home, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
-import { Show, UserButton, SignInButton, SignUpButton, useClerk } from '@clerk/nextjs';
+import { useUser } from '@/firebase/provider';
+import { firebaseSignOut } from '@/lib/auth';
+import { NotificationBell } from '@/components/shared/NotificationBell';
 
 interface HeaderProps {
   role: 'citizen' | 'rescue' | 'admin';
@@ -19,7 +20,7 @@ export function Header({ role, userName }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { signOut } = useClerk();
+  const { user } = useUser();
 
   const roleColors = {
     citizen: 'bg-primary',
@@ -27,34 +28,21 @@ export function Header({ role, userName }: HeaderProps) {
     admin: 'bg-slate-800',
   };
 
+  const loginPaths: Record<string, string> = {
+    citizen: '/citizen/login',
+    rescue: '/rescue/login',
+    admin: '/admin/login',
+  };
+
   const handleLogout = async () => {
     try {
-      await signOut({ redirectUrl: '/' });
-      toast({
-        title: "Logged Out",
-        description: "You have been signed out successfully.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Logout Failed",
-        description: "Could not sign out. Please try again.",
-      });
+      await firebaseSignOut();
+      toast({ title: 'Logged Out', description: 'You have been signed out successfully.' });
+      router.push(loginPaths[role]);
+    } catch {
+      toast({ variant: 'destructive', title: 'Logout Failed', description: 'Could not sign out. Please try again.' });
     }
   };
-
-  const handleNotifications = () => {
-    toast({
-      title: "Notifications",
-      description: "No new notifications at this time.",
-    });
-  };
-
-  const navLinks = [
-    { href: '/citizen', label: 'Citizen Portal', icon: <UserIcon className="h-5 w-5" /> },
-    { href: '/rescue', label: 'Rescue Dashboard', icon: <Ambulance className="h-5 w-5" /> },
-    { href: '/admin', label: 'Admin Command', icon: <Shield className="h-5 w-5" /> },
-  ];
 
   return (
     <>
@@ -74,36 +62,34 @@ export function Header({ role, userName }: HeaderProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-4">
-            <Button variant="ghost" size="icon" className="relative text-slate-600 hover:text-primary" onClick={handleNotifications}>
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-red-500 border-2 border-white"></span>
-            </Button>
-            
-            {/* Clerk Auth: Show UserButton when signed in, SignIn/SignUp when signed out */}
-            <Show when="signed-in">
-              <UserButton 
-                afterSignOutUrl="/"
-                appearance={{
-                  elements: {
-                    avatarBox: "h-10 w-10 border-2 border-slate-100",
-                  }
-                }}
-              />
-            </Show>
-            <Show when="signed-out">
-              <SignInButton mode="modal">
-                <Button variant="outline" size="sm" className="rounded-xl font-bold border-2">
-                  Sign In
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Live notification bell */}
+            <NotificationBell role={role} />
+
+            {user && (
+              <div className="hidden sm:flex items-center gap-3">
+                {/* Profile link */}
+                <Link
+                  href={`/profile?role=${role}`}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-primary transition-colors"
+                >
+                  <div className="h-8 w-8 rounded-xl bg-slate-100 flex items-center justify-center border-2 border-slate-200">
+                    <User className="h-4 w-4 text-slate-500" />
+                  </div>
+                  <span className="hidden md:inline">{userName}</span>
+                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-xl font-bold border-2 gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
                 </Button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <Button size="sm" className="rounded-xl font-bold bg-primary hover:bg-primary/90 text-white">
-                  Sign Up
-                </Button>
-              </SignUpButton>
-            </Show>
-            
+              </div>
+            )}
+
             <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
               <Menu className="h-6 w-6" />
             </Button>
@@ -111,63 +97,39 @@ export function Header({ role, userName }: HeaderProps) {
         </div>
       </header>
 
+      {/* Mobile menu */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="right" className="w-[300px]">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2 text-left">
-              <Waves className="h-5 w-5 text-primary" />
-              FloodGuard Connect
+              <Waves className="h-5 w-5 text-primary" /> FloodGuard Connect
             </SheetTitle>
-            <SheetDescription className="text-left">Navigate to a portal</SheetDescription>
+            <SheetDescription className="text-left">Navigation</SheetDescription>
           </SheetHeader>
           <nav className="mt-8 flex flex-col gap-2">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-colors ${
-                  `/${role}` === link.href
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                {link.icon}
-                {link.label}
-              </Link>
-            ))}
-            <div className="border-t my-4" />
             <Link
               href="/"
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100"
             >
-              <Home className="h-5 w-5" />
-              Back to Home
+              <Home className="h-5 w-5" /> Back to Home
             </Link>
-            <Show when="signed-in">
+            <Link
+              href={`/profile?role=${role}`}
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100"
+            >
+              <User className="h-5 w-5" /> My Profile
+            </Link>
+            <div className="border-t my-4" />
+            {user && (
               <button
                 onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-50 text-left"
               >
-                <LogOut className="h-5 w-5" />
-                Log out
+                <LogOut className="h-5 w-5" /> Log out
               </button>
-            </Show>
-            <Show when="signed-out">
-              <div className="flex flex-col gap-2 px-4">
-                <SignInButton mode="modal">
-                  <Button variant="outline" className="w-full rounded-xl font-bold border-2">
-                    Sign In
-                  </Button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <Button className="w-full rounded-xl font-bold bg-primary hover:bg-primary/90 text-white">
-                    Sign Up
-                  </Button>
-                </SignUpButton>
-              </div>
-            </Show>
+            )}
           </nav>
         </SheetContent>
       </Sheet>

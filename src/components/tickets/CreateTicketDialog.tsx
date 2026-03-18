@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { MapPin, Loader2, User, Hash, Target, Map as MapIcon, AlertCircle, Search } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // Leaflet needs window, so we import it dynamically
 const MapContainer = dynamic(() => import('react-leaflet').then(mod => mod.MapContainer), { ssr: false });
@@ -177,16 +179,51 @@ export function CreateTicketDialog({ isOpen, onClose }: { isOpen: boolean; onClo
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    // Simulate SOS broadcast
-    setTimeout(() => {
+    try {
+      const auth = getAuth();
+      const db = getFirestore();
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error('Not authenticated');
+
+      // Derive priority: Trapped + Medical = Critical, else High or Medium
+      const criticalTypes = ['Trapped', 'Injured', 'Medical emergency'];
+      const priority = criticalTypes.includes(values.emergencyType) ? 'Critical' : 'High';
+
+      await addDoc(collection(db, 'emergency_tickets'), {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || 'Citizen',
+        emergencyType: values.emergencyType,
+        numberOfPeople: values.numberOfPeople,
+        notes: values.notes || '',
+        priority,
+        status: 'pending',
+        location: {
+          address: values.location,
+          lat: values.latitude ?? 0,
+          lng: values.longitude ?? 0,
+          pincode: values.pincode,
+        },
+        assignedTo: null,
+        assignedName: null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
       toast({
-        title: "SOS Signal Transmitted",
-        description: "Rescue crews notified of your precise coordinates.",
+        title: '🚨 SOS Signal Transmitted',
+        description: 'Rescue crews have been notified of your precise coordinates.',
       });
       form.reset();
       onClose();
+    } catch (err: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Submission Failed',
+        description: err.message || 'Could not save your ticket. Please try again.',
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   }
 
   const selectedLat = form.watch('latitude');

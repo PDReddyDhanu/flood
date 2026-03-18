@@ -2,48 +2,62 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    /**
-     * FloodGuard Connect Security Rules
-     * Updated: Allowing authenticated users to read and update tickets for coordination.
-     * Redeploy trigger: Broadening read permissions for anonymous users.
-     */
-
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isAdmin() {
-      return isSignedIn() && exists(/databases/$(database)/documents/roles_admin/$(request.auth.uid));
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // --- COLLECTION RULES ---
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
 
+    // --- ADMINS COLLECTION ---
+    match /admins/{adminUid} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn() && request.auth.uid == adminUid;
+      allow delete: if false;
+    }
+
+    // --- USERS COLLECTION ---
     match /users/{userId} {
-      allow get, list: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn();
       allow create: if isSignedIn() && request.auth.uid == userId;
+      // Users can update their own profile; admins can update anyone (for approval)
       allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow delete: if isAdmin();
     }
 
-    match /emergency_tickets/{emergencyTicketId} {
-      // Allow all authenticated users (including anonymous citizens/rescue) to view tickets for coordination.
+    // --- EMERGENCY TICKETS ---
+    match /emergency_tickets/{ticketId} {
       allow read, list: if isSignedIn();
-      
-      // Citizens can create their own tickets.
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      
-      // Admins, owners, or rescue members assigning themselves can update.
-      allow update: if isAdmin() 
+      allow update: if isAdmin()
                     || (isSignedIn() && resource.data.userId == request.auth.uid)
-                    || (isSignedIn() && request.resource.data.assignedTeamMemberIds[request.auth.uid] == true);
-                    
+                    || (isSignedIn() && request.resource.data.assignedTo == request.auth.uid);
       allow delete: if isAdmin();
     }
 
-    // Roles and helper paths
-    match /roles_admin/{adminUid} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+    // --- NOTIFICATIONS ---
+    match /notifications/{notifId} {
+      // Any signed-in user can read notifications
+      allow read, list: if isSignedIn();
+      // Admin can send to anyone; rescue can only send to citizens/all
+      allow create: if isSignedIn() && (
+        isAdmin() ||
+        (userRole() == 'rescue' && request.resource.data.targetRole in ['citizen', 'all'])
+      );
+      // Any signed-in user can update deletedBy array (soft delete for themselves)
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['deletedBy'])
+      );
+      allow delete: if isAdmin();
     }
+
   }
 }

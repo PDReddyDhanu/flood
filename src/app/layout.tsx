@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
@@ -28,12 +27,10 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased bg-background min-h-screen">
-        <ClerkProvider>
-          <FirebaseClientProvider>
-            {children}
-            <Toaster />
-          </FirebaseClientProvider>
-        </ClerkProvider>
+        <FirebaseClientProvider>
+          {children}
+          <Toaster />
+        </FirebaseClientProvider>
       </body>
     </html>
   );
